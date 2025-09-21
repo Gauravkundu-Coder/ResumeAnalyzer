@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js" rel="preload" as="script">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-section:hover {
+            transform: translateY(-5px);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #f0fff0;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-group {
+            margin: 20px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            display: none;
+        }
+
+        .score-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .score-number {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .score-text {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .info-card {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .skill-tag {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: transform 0.2s ease;
+        }
+
+        .skill-tag:hover {
+            transform: scale(1.05);
+        }
+
+        .recommendations {
+            background: #fff9e6;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .recommendations h3 {
+            color: #856404;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-section, .results-section {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .contact-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .contact-item i {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .ai-insights {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .ai-insights h3 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .strengths, .improvements {
+            margin: 20px 0;
+        }
+
+        .strengths ul, .improvements ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .strengths li, .improvements li {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .strengths li::before {
+            content: "✅";
+            font-size: 1.2rem;
+        }
+
+        .improvements li::before {
+            content: "💡";
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Resume Analyzer</h1>
+            <p>Get instant feedback and improve your resume with AI-powered analysis</p>
+        </div>
+
+        <div class="upload-section">
+            <form id="resumeForm" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('resumeFile').click()">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <div class="upload-text">
+                        <strong>Click to upload your resume</strong><br>
+                        or drag and drop it here
+                    </div>
+                    <p style="margin-top: 15px; color: #999; font-size: 0.9rem;">
+                        Supported formats: PDF, DOC, DOCX, TXT (Max 5MB)
+                    </p>
+                    <input type="file" id="resumeFile" name="resume" class="file-input" accept=".pdf,.doc,.docx,.txt" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jobDescription">Job Description (Optional)</label>
+                    <textarea id="jobDescription" name="jobDescription" class="form-control" rows="4" 
+                        placeholder="Paste the job description here for more targeted analysis..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="targetRole">Target Role (Optional)</label>
+                    <select id="targetRole" name="targetRole" class="form-control">
+                        <option value="">Select a role...</option>
+                        <option value="software-engineer">Software Engineer</option>
+                        <option value="data-scientist">Data Scientist</option>
+                        <option value="product-manager">Product Manager</option>
+                        <option value="designer">Designer</option>
+                        <option value="marketing">Marketing Specialist</option>
+                        <option value="sales">Sales Representative</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-search"></i>
+                        Analyze Resume
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="loading" id="loadingSection">
+            <div class="spinner"></div>
+            <h3>Analyzing your resume...</h3>
+            <p>This may take a few moments while our AI reviews your document.</p>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <!-- Results will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('resumeForm');
+            const fileInput = document.getElementById('resumeFile');
+            const uploadArea = document.querySelector('.upload-area');
+            const loadingSection = document.getElementById('loadingSection');
+            const resultsSection = document.getElementById('resultsSection');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            // File upload handling
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    updateUploadAreaText(files[0].name);
+                }
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    updateUploadAreaText(this.files[0].name);
+                }
+            });
+
+            function updateUploadAreaText(filename) {
+                const uploadText = uploadArea.querySelector('.upload-text');
+                uploadText.innerHTML = `<strong>Selected: ${filename}</strong><br><span style="font-size: 0.9rem;">Click to choose a different file</span>`;
+            }
+
+            // Form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!fileInput.files[0]) {
+                    showError('Please select a resume file to analyze.');
+                    return;
+                }
+
+                showLoading();
+                hideMessages();
+
+                const formData = new FormData();
+                formData.append('resume', fileInput.files[0]);
+                formData.append('jobDescription', document.getElementById('jobDescription').value);
+                formData.append('targetRole', document.getElementById('targetRole').value);
+
+                try {
+                    const response = await fetch('/api/analyze-resume', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        displayResults(result.analysis);
+                        showSuccess('Resume analysis completed successfully!');
+                    } else {
+                        showError(result.error || 'Analysis failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('Network error. Please check your connection and try again.');
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            function showLoading() {
+                loadingSection.style.display = 'block';
+                resultsSection.style.display = 'none';
+            }
+
+            function hideLoading() {
+                loadingSection.style.display = 'none';
+            }
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            }
+
+            function hideMessages() {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+            }
+
+            function displayResults(analysis) {
+                const resultsHTML = `
+                    <div class="score-card">
+                        <div class="score-number">${analysis.resumeScore}<span style="font-size: 2rem;">/100</span></div>
+                        <div class="score-text">Resume Score</div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h3><i class="fas fa-user"></i> Contact Information</h3>
+                            <div class="contact-info">
+                                <div class="contact-item">
+                                    <i class="fas fa-user"></i>
+                                    <div><strong>Name</strong></div>
+                                    <div>${analysis.contactInfo.name}</div>
+                                </div>
+                                <div class="contact-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <div><strong>Email</strong></div>
+                                    <div>${analysis.contactInfo.email}</div>
+                                </div>
+                                <div class="contact-item">
+                                    <i class="fas fa-phone"></i>
+                                    <div><strong>Phone</strong></div>
+                                    <div>${analysis.contactInfo.phone}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-cogs"></i> Skills Detected (${analysis.skills.length})</h3>
+                            <div class="skills-container">
+                                ${analysis.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-briefcase"></i> Experience</h3>
+                            <p style="font-size: 2rem; color: #667eea; font-weight: bold; margin-top: 15px;">
+                                ${analysis.experience} ${analysis.experience === 1 ? 'year' : 'years'}
+                            </p>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-file-alt"></i> Document Stats</h3>
+                            <div style="margin-top: 15px;">
+                                <p><strong>Word Count:</strong> ${analysis.wordCount}</p>
+                                <p><strong>File Size:</strong> ${(analysis.fileSize / 1024).toFixed(2)} KB</p>
+                                <p><strong>Analysis Date:</strong> ${new Date(analysis.analysisDate).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-insights">
+                        <h3><i class="fas fa-brain"></i> AI-Powered Insights</h3>
+                        
+                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                            <h4>Professional Summary</h4>
+                            <p style="margin-top: 10px; line-height: 1.6;">${analysis.aiAnalysis.summary}</p>
+                        </div>
+
+                        <div class="strengths">
+                            <h4>Top Strengths</h4>
+                            <ul>
+                                ${analysis.aiAnalysis.strengths.map(strength => `<li>${strength}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="improvements">
+                            <h4>Areas for Improvement</h4>
+                            <ul>
+                                ${analysis.aiAnalysis.improvements.map(improvement => `<li>${improvement}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="recommendations">
+                        <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+                        
+                        <h4 style="margin-top: 20px; margin-bottom: 15px;">Missing Skills or Keywords:</h4>
+                        ${analysis.aiAnalysis.missingSkills.map(skill => `
+                            <div class="recommendation-item">
+                                <strong>${skill}</strong> - Consider adding this to strengthen your profile
+                            </div>
+                        `).join('')}
+
+                        <div style="margin-top: 20px; padding: 20px; background: white; border-radius: 10px;">
+                            <h4>Overall Assessment</h4>
+                            <p style="margin-top: 10px; line-height: 1.6;">${analysis.aiAnalysis.assessment}</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 40px;">
+                        <button class="btn" onclick="window.print()">
+                            <i class="fas fa-print"></i>
+                            Print Report
+                        </button>
+                        <button class="btn" onclick="downloadReport()" style="margin-left: 20px;">
+                            <i class="fas fa-download"></i>
+                            Download Report
+                        </button>
+                    </div>
+                `;
+
+                resultsSection.innerHTML = resultsHTML;
+                resultsSection.style.display = 'block';
+
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            // Global function for download (simplified version)
+            window.downloadReport = function() {
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    analysis: 'Resume analysis data would be here'
+                };
+                
+                const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resume-analysis-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+        });
+    </script>
+</body>
+</html>
